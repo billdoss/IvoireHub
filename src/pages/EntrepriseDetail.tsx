@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BusinessMap } from "@/components/map/BusinessMap";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { ReviewList } from "@/components/reviews/ReviewList";
 import {
   MapPin,
   Star,
@@ -73,6 +76,11 @@ const businessData = {
 export default function EntrepriseDetail() {
   const { id } = useParams();
   const business = businessData; // In production, fetch by id
+  const [reviewRefreshTrigger, setReviewRefreshTrigger] = useState(0);
+
+  const handleReviewSubmitted = () => {
+    setReviewRefreshTrigger((prev) => prev + 1);
+  };
 
   const currentDay = new Date().toLocaleDateString("fr-FR", { weekday: "long" });
   const todayHours = business.hours.find((h) => h.day.toLowerCase() === currentDay.toLowerCase());
@@ -184,35 +192,20 @@ export default function EntrepriseDetail() {
 
                 {/* Reviews */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-foreground">Avis clients</h2>
-                    <Button variant="outline" size="sm">Écrire un avis</Button>
-                  </div>
-                  <div className="space-y-4">
-                    {business.reviews.map((review) => (
-                      <div key={review.id} className="bg-card rounded-xl p-4 border border-border">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                              {review.author.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{review.author}</p>
-                              <p className="text-xs text-muted-foreground">{review.date}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-4 w-4 ${i < review.rating ? "text-amber-500 fill-amber-500" : "text-muted"}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-muted-foreground text-sm">{review.comment}</p>
-                      </div>
-                    ))}
+                  <h2 className="text-xl font-semibold text-foreground mb-4">Avis clients</h2>
+                  
+                  {/* Review List from Database */}
+                  <ReviewList 
+                    businessId={id || business.id} 
+                    refreshTrigger={reviewRefreshTrigger} 
+                  />
+                  
+                  {/* Review Form */}
+                  <div className="mt-6">
+                    <ReviewForm 
+                      businessId={id || business.id} 
+                      onReviewSubmitted={handleReviewSubmitted} 
+                    />
                   </div>
                 </div>
               </div>

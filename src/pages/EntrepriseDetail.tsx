@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BusinessMap } from "@/components/map/BusinessMap";
 import {
   MapPin,
   Star,
@@ -301,9 +302,28 @@ export default function EntrepriseDetail() {
                   <p className="text-foreground mb-1">{business.address}</p>
                   <p className="text-muted-foreground text-sm mb-1">{business.commune}, {business.city}</p>
                   {business.landmark && (
-                    <p className="text-muted-foreground text-sm italic">{business.landmark}</p>
+                    <p className="text-muted-foreground text-sm italic mb-4">{business.landmark}</p>
                   )}
-                  <Button variant="outline" className="w-full mt-4">
+                  
+                  {/* Map */}
+                  <BusinessMap
+                    markers={[
+                      {
+                        id: business.id,
+                        name: business.name,
+                        lat: business.coordinates.lat,
+                        lng: business.coordinates.lng,
+                        category: business.subcategory,
+                        isPremium: business.isPremium,
+                        address: business.address,
+                      },
+                    ]}
+                    center={[business.coordinates.lat, business.coordinates.lng]}
+                    zoom={15}
+                    className="h-[200px] w-full rounded-xl mb-4"
+                  />
+                  
+                  <Button variant="outline" className="w-full">
                     <Navigation className="h-4 w-4 mr-2" />
                     Itinéraire
                   </Button>

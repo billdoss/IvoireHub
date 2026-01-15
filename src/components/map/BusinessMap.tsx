@@ -1,10 +1,9 @@
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { Icon } from "leaflet";
+import { useEffect, useRef } from "react";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 // Fix for default marker icons in Leaflet with Vite
-const defaultIcon = new Icon({
+const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -14,7 +13,7 @@ const defaultIcon = new Icon({
   shadowSize: [41, 41],
 });
 
-const premiumIcon = new Icon({
+const premiumIcon = L.icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
@@ -41,23 +40,6 @@ interface BusinessMapProps {
   onMarkerClick?: (id: string) => void;
 }
 
-function MapBoundsUpdater({ markers }: { markers: MapMarker[] }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (markers.length > 0) {
-      const bounds = markers.map((m) => [m.lat, m.lng] as [number, number]);
-      if (bounds.length === 1) {
-        map.setView(bounds[0], 14);
-      } else {
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }
-    }
-  }, [markers, map]);
-
-  return null;
-}
-
 export function BusinessMap({
   markers,
   center = [5.3599, -4.0083], // Abidjan default
@@ -65,41 +47,72 @@ export function BusinessMap({
   className = "h-[400px] w-full rounded-xl",
   onMarkerClick,
 }: BusinessMapProps) {
-  return (
-    <MapContainer
-      center={center}
-      zoom={zoom}
-      scrollWheelZoom={true}
-      className={className}
-      style={{ zIndex: 0 }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <MapBoundsUpdater markers={markers} />
-      {markers.map((marker) => (
-        <Marker
-          key={marker.id}
-          position={[marker.lat, marker.lng]}
-          icon={marker.isPremium ? premiumIcon : defaultIcon}
-          eventHandlers={{
-            click: () => onMarkerClick?.(marker.id),
-          }}
-        >
-          <Popup>
-            <div className="text-sm">
-              <p className="font-semibold">{marker.name}</p>
-              {marker.category && (
-                <p className="text-muted-foreground">{marker.category}</p>
-              )}
-              {marker.address && (
-                <p className="text-muted-foreground text-xs mt-1">{marker.address}</p>
-              )}
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-  );
+  const mapRef = useRef<L.Map | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+
+    // Initialize the map
+    mapRef.current = L.map(containerRef.current).setView(center, zoom);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(mapRef.current);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Clear existing markers
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    // Add new markers
+    markers.forEach((markerData) => {
+      const marker = L.marker([markerData.lat, markerData.lng], {
+        icon: markerData.isPremium ? premiumIcon : defaultIcon,
+      }).addTo(mapRef.current!);
+
+      // Create popup content
+      let popupContent = `<div class="text-sm"><p class="font-semibold">${markerData.name}</p>`;
+      if (markerData.category) {
+        popupContent += `<p class="text-gray-500">${markerData.category}</p>`;
+      }
+      if (markerData.address) {
+        popupContent += `<p class="text-gray-500 text-xs mt-1">${markerData.address}</p>`;
+      }
+      popupContent += "</div>";
+
+      marker.bindPopup(popupContent);
+
+      if (onMarkerClick) {
+        marker.on("click", () => onMarkerClick(markerData.id));
+      }
+
+      markersRef.current.push(marker);
+    });
+
+    // Fit bounds if multiple markers
+    if (markers.length > 1) {
+      const bounds = L.latLngBounds(
+        markers.map((m) => [m.lat, m.lng] as [number, number])
+      );
+      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+    } else if (markers.length === 1) {
+      mapRef.current.setView([markers[0].lat, markers[0].lng], 15);
+    }
+  }, [markers, onMarkerClick]);
+
+  return <div ref={containerRef} className={className} style={{ zIndex: 0 }} />;
 }

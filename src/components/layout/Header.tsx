@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Menu, X, MapPin, Building2, Newspaper, Pill, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Search, Menu, X, MapPin, Building2, Newspaper, Pill, User, LogOut, LayoutDashboard, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
+  const { isAdmin } = useAdmin();
 
   const handleSignOut = async () => {
     await signOut();
@@ -82,6 +84,15 @@ export function Header() {
                     <LayoutDashboard className="h-4 w-4 mr-2" />
                     Tableau de bord
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate("/admin")}>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Administration
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="h-4 w-4 mr-2" />
@@ -140,6 +151,12 @@ export function Header() {
                   <LayoutDashboard className="h-4 w-4 mr-2" />
                   Tableau de bord
                 </Button>
+                {isAdmin && (
+                  <Button variant="outline" className="w-full" onClick={() => { setIsMenuOpen(false); navigate("/admin"); }}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Administration
+                  </Button>
+                )}
                 <Button variant="ghost" className="w-full text-destructive" onClick={() => { setIsMenuOpen(false); handleSignOut(); }}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Déconnexion

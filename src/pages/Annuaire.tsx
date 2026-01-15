@@ -16,7 +16,8 @@ import {
   Grid3X3,
   List,
   ChevronDown,
-  X
+  X,
+  Map
 } from "lucide-react";
 import {
   Select,
@@ -25,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BusinessMap, MapMarker } from "@/components/map/BusinessMap";
 
 const businesses = [
   {
@@ -35,6 +37,8 @@ const businesses = [
     description: "Cuisine africaine authentique et raffinée au cœur d'Abidjan. Spécialités ivoiriennes et ouest-africaines.",
     address: "Cocody, Riviera Golf",
     city: "Abidjan",
+    lat: 5.3545,
+    lng: -3.9756,
     rating: 4.8,
     reviewCount: 156,
     phone: "+225 07 00 00 00",
@@ -51,6 +55,8 @@ const businesses = [
     description: "Centre médical moderne avec des spécialistes qualifiés. Consultation, imagerie, laboratoire.",
     address: "Plateau, Avenue Marchand",
     city: "Abidjan",
+    lat: 5.3258,
+    lng: -4.0206,
     rating: 4.6,
     reviewCount: 89,
     phone: "+225 01 00 00 00",
@@ -67,6 +73,8 @@ const businesses = [
     description: "Réparation et entretien toutes marques. Mécaniciens experts et pièces d'origine.",
     address: "Marcory, Zone 4",
     city: "Abidjan",
+    lat: 5.3045,
+    lng: -4.0082,
     rating: 4.5,
     reviewCount: 67,
     phone: "+225 05 00 00 00",
@@ -83,6 +91,8 @@ const businesses = [
     description: "Avocat d'affaires spécialisé en droit commercial et des sociétés. Conseil et contentieux.",
     address: "Plateau, Rue du Commerce",
     city: "Abidjan",
+    lat: 5.3234,
+    lng: -4.0189,
     rating: 4.9,
     reviewCount: 42,
     phone: "+225 27 00 00 00",
@@ -99,6 +109,8 @@ const businesses = [
     description: "Salon de coiffure et institut de beauté. Soins capillaires, manucure, pédicure.",
     address: "Yopougon, Maroc",
     city: "Abidjan",
+    lat: 5.3412,
+    lng: -4.0756,
     rating: 4.7,
     reviewCount: 203,
     phone: "+225 07 11 11 11",
@@ -115,6 +127,8 @@ const businesses = [
     description: "Hôtel de luxe avec vue sur la lagune. Piscine, spa, restaurant gastronomique.",
     address: "Cocody, Ambassades",
     city: "Abidjan",
+    lat: 5.3489,
+    lng: -4.0012,
     rating: 4.4,
     reviewCount: 178,
     phone: "+225 27 22 22 22",
@@ -133,7 +147,7 @@ export default function Annuaire() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [selectedCity, setSelectedCity] = useState("Toutes les villes");
   const [selectedCategory, setSelectedCategory] = useState("Toutes catégories");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredBusinesses = businesses.filter((business) => {
@@ -144,6 +158,17 @@ export default function Annuaire() {
     const matchesCategory = selectedCategory === "Toutes catégories" || business.category === selectedCategory;
     return matchesSearch && matchesCity && matchesCategory;
   });
+
+  // Convert businesses to map markers
+  const mapMarkers: MapMarker[] = filteredBusinesses.map((b) => ({
+    id: b.id,
+    name: b.name,
+    lat: b.lat,
+    lng: b.lng,
+    category: b.subcategory,
+    isPremium: b.isPremium,
+    address: b.address,
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -222,6 +247,13 @@ export default function Annuaire() {
                 >
                   <List className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant={viewMode === "map" ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setViewMode("map")}
+                >
+                  <Map className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
@@ -249,8 +281,13 @@ export default function Annuaire() {
               </div>
             )}
 
-            {/* Results Grid/List */}
-            {viewMode === "grid" ? (
+            {/* Results Grid/List/Map */}
+            {viewMode === "map" ? (
+              <BusinessMap 
+                markers={mapMarkers} 
+                className="h-[500px] w-full rounded-xl border border-border"
+              />
+            ) : viewMode === "grid" ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredBusinesses.map((business) => (
                   <Link

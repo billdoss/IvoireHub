@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Menu, X, MapPin, Phone, Building2, Newspaper, Pill, User } from "lucide-react";
+import { Search, Menu, X, MapPin, Building2, Newspaper, Pill, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navLinks = [
   { label: "Annuaire", href: "/annuaire", icon: Building2 },
@@ -13,6 +21,12 @@ const navLinks = [
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, signOut, loading } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/95 backdrop-blur-md">
@@ -53,13 +67,39 @@ export function Header() {
           </Button>
 
           <div className="hidden md:flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate("/connexion")}>
-              <User className="h-4 w-4 mr-2" />
-              Connexion
-            </Button>
-            <Button size="sm" onClick={() => navigate("/inscription")}>
-              Inscrire mon entreprise
-            </Button>
+            {loading ? (
+              <div className="h-9 w-24 bg-muted animate-pulse rounded-md" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="h-4 w-4 mr-2" />
+                    Mon compte
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Tableau de bord
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => navigate("/connexion")}>
+                  <User className="h-4 w-4 mr-2" />
+                  Connexion
+                </Button>
+                <Button size="sm" onClick={() => navigate("/inscription")}>
+                  Inscrire mon entreprise
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -78,7 +118,7 @@ export function Header() {
       <div
         className={cn(
           "md:hidden overflow-hidden transition-all duration-300 ease-in-out",
-          isMenuOpen ? "max-h-96 border-t border-border" : "max-h-0"
+          isMenuOpen ? "max-h-[500px] border-t border-border" : "max-h-0"
         )}
       >
         <nav className="container py-4 space-y-2">
@@ -94,13 +134,28 @@ export function Header() {
             </Link>
           ))}
           <div className="pt-4 space-y-2 border-t border-border">
-            <Button variant="outline" className="w-full" onClick={() => { setIsMenuOpen(false); navigate("/connexion"); }}>
-              <User className="h-4 w-4 mr-2" />
-              Connexion
-            </Button>
-            <Button className="w-full" onClick={() => { setIsMenuOpen(false); navigate("/inscription"); }}>
-              Inscrire mon entreprise
-            </Button>
+            {user ? (
+              <>
+                <Button variant="outline" className="w-full" onClick={() => { setIsMenuOpen(false); navigate("/dashboard"); }}>
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Tableau de bord
+                </Button>
+                <Button variant="ghost" className="w-full text-destructive" onClick={() => { setIsMenuOpen(false); handleSignOut(); }}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Déconnexion
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" className="w-full" onClick={() => { setIsMenuOpen(false); navigate("/connexion"); }}>
+                  <User className="h-4 w-4 mr-2" />
+                  Connexion
+                </Button>
+                <Button className="w-full" onClick={() => { setIsMenuOpen(false); navigate("/inscription"); }}>
+                  Inscrire mon entreprise
+                </Button>
+              </>
+            )}
           </div>
         </nav>
       </div>

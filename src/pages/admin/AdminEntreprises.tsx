@@ -84,7 +84,7 @@ const AdminEntreprises = () => {
         .order("created_at", { ascending: false });
 
       if (statusFilter && statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
+        query = query.eq("status", statusFilter as "approved" | "draft" | "pending" | "rejected" | "suspended");
       }
 
       const { data, error } = await query;

@@ -253,7 +253,7 @@ const Dashboard = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => navigate(`/dashboard/entreprise/${business.id}`)}
+                              onClick={() => navigate(`/dashboard/editer/${business.id}`)}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>

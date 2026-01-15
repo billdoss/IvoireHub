@@ -13,6 +13,7 @@ import Connexion from "./pages/Connexion";
 import Inscription from "./pages/Inscription";
 import Dashboard from "./pages/Dashboard";
 import NouvelleEntreprise from "./pages/NouvelleEntreprise";
+import EditerEntreprise from "./pages/EditerEntreprise";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminEntreprises from "./pages/admin/AdminEntreprises";
 import AdminCategories from "./pages/admin/AdminCategories";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/inscription" element={<Inscription />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/nouvelle-entreprise" element={<NouvelleEntreprise />} />
+            <Route path="/dashboard/editer/:id" element={<EditerEntreprise />} />
             {/* Admin routes */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/entreprises" element={<AdminEntreprises />} />

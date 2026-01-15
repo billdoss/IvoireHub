@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Loader2, MapPin, Phone, Globe, Info, Clock, Image } from "lucide-react";
+import { ArrowLeft, Building2, Loader2, MapPin, Phone, Globe, Image as ImageIcon } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ImageUpload } from "@/components/business/ImageUpload";
+import { GalleryUpload } from "@/components/business/GalleryUpload";
 import type { Database } from "@/integrations/supabase/types";
-
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 type City = Database["public"]["Tables"]["cities"]["Row"];
 type Commune = Database["public"]["Tables"]["communes"]["Row"];
@@ -56,7 +57,10 @@ const NouvelleEntreprise = () => {
     whatsapp: "",
     facebookUrl: "",
     instagramUrl: "",
+    logoUrl: "",
   });
+  
+  const [galleryImages, setGalleryImages] = useState<{ url: string; caption?: string }[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -113,7 +117,7 @@ const NouvelleEntreprise = () => {
     try {
       const slug = generateSlug(formData.name) + "-" + Date.now().toString(36);
       
-      const { error } = await supabase.from("businesses").insert({
+      const { data: business, error } = await supabase.from("businesses").insert({
         user_id: user.id,
         name: formData.name,
         slug,
@@ -131,10 +135,23 @@ const NouvelleEntreprise = () => {
         whatsapp: formData.whatsapp || null,
         facebook_url: formData.facebookUrl || null,
         instagram_url: formData.instagramUrl || null,
+        logo_url: formData.logoUrl || null,
         status: "pending",
-      });
+      }).select().single();
 
       if (error) throw error;
+      
+      // Save gallery images
+      if (business && galleryImages.length > 0) {
+        const imagesToInsert = galleryImages.map((img, index) => ({
+          business_id: business.id,
+          image_url: img.url,
+          caption: img.caption || null,
+          sort_order: index,
+        }));
+        
+        await supabase.from("business_images").insert(imagesToInsert);
+      }
 
       toast({
         title: "Entreprise créée",
@@ -252,6 +269,35 @@ const NouvelleEntreprise = () => {
                     className="mt-1 min-h-[120px]"
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Images */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Images
+                </CardTitle>
+                <CardDescription>
+                  Logo et galerie de photos de votre entreprise
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <ImageUpload
+                  value={formData.logoUrl}
+                  onChange={(url) => handleChange("logoUrl", url)}
+                  folder="logos"
+                  aspectRatio="square"
+                  label="Logo de l'entreprise"
+                />
+                
+                <GalleryUpload
+                  images={galleryImages}
+                  onChange={setGalleryImages}
+                  folder="gallery"
+                  maxImages={10}
+                />
               </CardContent>
             </Card>
 

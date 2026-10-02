@@ -12,6 +12,10 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  // Indispensable pour GitHub Pages : le site est servi depuis
+  // https://billdoss.github.io/IvoireHub/ (voir "homepage" dans package.json).
+  // Sans ce base, les assets sont resolus depuis /assets/... et la page reste blanche.
+  base: "/IvoireHub/",
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {

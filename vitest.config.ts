@@ -4,6 +4,9 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
+  // Doit rester identique a `base` de vite.config.ts : les tests doivent voir le
+  // meme import.meta.env.BASE_URL que l'application (deploiement sous /IvoireHub/).
+  base: "/IvoireHub/",
   test: {
     environment: "jsdom",
     globals: true,

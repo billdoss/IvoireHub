@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Link } from "react-router-dom";
 
 interface ReviewFormProps {
   businessId: string;
@@ -70,10 +71,11 @@ export function ReviewForm({ businessId, onReviewSubmitted }: ReviewFormProps) {
       setRating(0);
       setComment("");
       onReviewSubmitted();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({
         title: "Erreur",
-        description: error.message || "Impossible d'envoyer l'avis.",
+        description: err.message || "Impossible d'envoyer l'avis.",
         variant: "destructive",
       });
     } finally {
@@ -88,7 +90,7 @@ export function ReviewForm({ businessId, onReviewSubmitted }: ReviewFormProps) {
           Connectez-vous pour laisser un avis
         </p>
         <Button asChild>
-          <a href="/connexion">Se connecter</a>
+          <Link to="/connexion">Se connecter</Link>
         </Button>
       </div>
     );

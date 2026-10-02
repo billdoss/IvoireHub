@@ -29,7 +29,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      {/* BASE_URL = "/IvoireHub/" (defini dans vite.config.ts) : indispensable
+          pour que les routes fonctionnent depuis le sous-chemin de deploiement. */}
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />

@@ -76,6 +76,24 @@ export default function Pharmacies() {
       <Header />
 
       <main className="flex-1">
+        {/* Erreur de configuration Supabase */}
+        {error && (
+          <section className="bg-background py-16 text-center">
+            <div className="max-w-md mx-auto px-4">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Configuration manquante</h3>
+              <p className="text-muted-foreground mb-6">
+                Les variables d'environnement Supabase ne sont pas configurées sur ce déploiement.
+                Vérifiez que <code className="font-mono text-sm">VITE_SUPABASE_URL</code> et
+                <code className="font-mono text-sm">VITE_SUPABASE_PUBLISHABLE_KEY</code> sont définies dans
+                GitHub > Settings > Secrets and variables > Actions.
+              </p>
+              <p className="text-xs text-muted-foreground">{error}</p>
+            </div>
+          </section>
+        )}
+
+        {!error && (
         {/* Hero */}
         <section className="bg-gradient-dark py-12 md:py-16 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
@@ -285,7 +303,8 @@ export default function Pharmacies() {
             )}
           </div>
         </section>
-      </main>
+  )}
+</main>
 
       <Footer />
     </div>

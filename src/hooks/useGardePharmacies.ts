@@ -32,21 +32,35 @@ export function resolveCoords(p: GardePharmacy): { lat: number; lng: number } | 
 export function useGardePharmacies(dateISO: string) {
   const [data, setData] = useState<GardePharmacy[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       setLoading(true);
-      const { data: rows } = await supabase
-        .from("pharmacies_garde")
-        .select("*, communes(name), cities(name)")
-        .lte("start_date", dateISO)
-        .gte("end_date", dateISO)
-        .order("commune_name", { ascending: true })
-        .order("name", { ascending: true });
-      if (!cancelled) {
-        setData((rows as GardePharmacy[]) ?? []);
-        setLoading(false);
+      setError(null);
+      try {
+        const { data: rows, error: supabaseError } = await supabase
+          .from("pharmacies_garde")
+          .select("*, communes(name), cities(name)")
+          .lte("start_date", dateISO)
+          .gte("end_date", dateISO)
+          .order("commune_name", { ascending: true })
+          .order("name", { ascending: true });
+        if (supabaseError) {
+          setError(supabaseError.message);
+          setLoading(false);
+          return;
+        }
+        if (!cancelled) {
+          setData((rows as GardePharmacy[]) ?? []);
+          setLoading(false);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err?.message || "Erreur lors du chargement des pharmacies de garde.");
+          setLoading(false);
+        }
       }
     };
     run();
@@ -55,5 +69,5 @@ export function useGardePharmacies(dateISO: string) {
     };
   }, [dateISO]);
 
-  return { data, loading };
+  return { data, loading, error };
 }

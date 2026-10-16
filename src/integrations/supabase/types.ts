@@ -380,40 +380,58 @@ export type Database = {
         Row: {
           address: string | null
           city_id: string | null
+          city_name: string | null
           commune_id: string | null
+          commune_name: string | null
           created_at: string
           end_date: string
           id: string
+          is_active: boolean | null
           latitude: number | null
           longitude: number | null
           name: string
           phone: string | null
+          scraped_at: string | null
+          source: string | null
+          source_url: string | null
           start_date: string
         }
         Insert: {
           address?: string | null
           city_id?: string | null
+          city_name?: string | null
           commune_id?: string | null
+          commune_name?: string | null
           created_at?: string
           end_date: string
           id?: string
+          is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name: string
           phone?: string | null
+          scraped_at?: string | null
+          source?: string | null
+          source_url?: string | null
           start_date: string
         }
         Update: {
           address?: string | null
           city_id?: string | null
+          city_name?: string | null
           commune_id?: string | null
+          commune_name?: string | null
           created_at?: string
           end_date?: string
           id?: string
+          is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name?: string
           phone?: string | null
+          scraped_at?: string | null
+          source?: string | null
+          source_url?: string | null
           start_date?: string
         }
         Relationships: [

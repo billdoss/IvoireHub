@@ -1,81 +1,74 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Phone, Clock, Calendar as CalendarIcon, Navigation, Pill, AlertCircle } from "lucide-react";
+import { BusinessMap } from "@/components/map/BusinessMap";
+import {
+  MapPin, Phone, Clock, Calendar as CalendarIcon, Navigation, Pill,
+  AlertCircle, LocateFixed, Search, Loader2, ExternalLink,
+} from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { haversineKm, formatDistance } from "@/lib/geo";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { useGardePharmacies, resolveCoords } from "@/hooks/useGardePharmacies";
 
-const pharmaciesDeGarde = [
-  {
-    id: "1",
-    name: "Pharmacie du Plateau",
-    address: "Avenue Franchet d'Esperey, Plateau",
-    city: "Abidjan",
-    commune: "Plateau",
-    phone: "+225 27 20 21 22 23",
-    hours: "24h/24",
-    distance: "1.2 km",
-    coordinates: { lat: 5.3167, lng: -4.0167 },
-  },
-  {
-    id: "2",
-    name: "Pharmacie Riviera Palmeraie",
-    address: "Boulevard des Martyrs, Cocody",
-    city: "Abidjan",
-    commune: "Cocody",
-    phone: "+225 27 22 44 55 66",
-    hours: "24h/24",
-    distance: "3.5 km",
-    coordinates: { lat: 5.3500, lng: -3.9833 },
-  },
-  {
-    id: "3",
-    name: "Pharmacie Marcory Résidentiel",
-    address: "Rue Pierre et Marie Curie, Marcory",
-    city: "Abidjan",
-    commune: "Marcory",
-    phone: "+225 27 21 26 27 28",
-    hours: "24h/24",
-    distance: "4.1 km",
-    coordinates: { lat: 5.3000, lng: -3.9833 },
-  },
-  {
-    id: "4",
-    name: "Pharmacie Yopougon Selmer",
-    address: "Carrefour Selmer, Yopougon",
-    city: "Abidjan",
-    commune: "Yopougon",
-    phone: "+225 27 23 45 67 89",
-    hours: "24h/24",
-    distance: "8.2 km",
-    coordinates: { lat: 5.3333, lng: -4.0833 },
-  },
-];
-
-const communes = [
-  "Toutes les communes",
-  "Plateau",
-  "Cocody",
-  "Marcory",
-  "Yopougon",
-  "Treichville",
-  "Adjamé",
-  "Abobo",
-  "Koumassi",
-];
+const ALL = "Toutes les communes";
 
 export default function Pharmacies() {
   const [date, setDate] = useState<Date>(new Date());
-  const [selectedCommune, setSelectedCommune] = useState("Toutes les communes");
+  const [selectedCommune, setSelectedCommune] = useState(ALL);
+  const [query, setQuery] = useState("");
+  const [sortNearest, setSortNearest] = useState(false);
+  const { position, loading: geoLoading, error: geoError, locate } = useGeolocation();
 
-  const filteredPharmacies = pharmaciesDeGarde.filter(
-    (p) => selectedCommune === "Toutes les communes" || p.commune === selectedCommune
+  const dateISO = format(date, "yyyy-MM-dd");
+  const { data: pharmacies, loading } = useGardePharmacies(dateISO);
+
+  const communes = useMemo(() => {
+    const set = new Set<string>();
+    pharmacies.forEach((p) => {
+      const c = p.commune_name || p.communes?.name;
+      if (c) set.add(c);
+    });
+    return [ALL, ...[...set].sort((a, b) => a.localeCompare(b, "fr"))];
+  }, [pharmacies]);
+
+  const enriched = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return pharmacies
+      .filter((p) => {
+        const commune = p.commune_name || p.communes?.name || "";
+        if (selectedCommune !== ALL && commune !== selectedCommune) return false;
+        if (q && !`${p.name} ${p.address ?? ""} ${commune}`.toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .map((p) => {
+        const coords = resolveCoords(p);
+        const dist = position && coords
+          ? haversineKm(position.lat, position.lng, coords.lat, coords.lng) : null;
+        return { ...p, commune: p.commune_name || p.communes?.name || "—", coords, dist };
+      })
+      .sort((a, b) => {
+        if (sortNearest && position) return (a.dist ?? Infinity) - (b.dist ?? Infinity);
+        return a.name.localeCompare(b.name, "fr");
+      });
+  }, [pharmacies, selectedCommune, query, position, sortNearest]);
+
+  const nearest = sortNearest && position ? enriched[0] : null;
+
+  const markers = useMemo(
+    () => enriched.filter((p) => p.coords).map((p) => ({
+      id: p.id, name: p.name, lat: p.coords!.lat, lng: p.coords!.lng,
+      address: p.address || undefined,
+      category: p.dist != null ? formatDistance(p.dist) : p.commune,
+    })),
+    [enriched]
   );
 
   return (
@@ -92,7 +85,7 @@ export default function Pharmacies() {
             <div className="max-w-2xl">
               <Badge variant="outline" className="mb-4 border-success/30 text-success bg-success/10">
                 <Pill className="h-3 w-3 mr-1" />
-                Service 24h/24
+                Service 24h/24 — actualisé quotidiennement
               </Badge>
               <h1 className="text-3xl md:text-4xl font-bold text-secondary-foreground mb-4">
                 Pharmacies de Garde
@@ -107,11 +100,11 @@ export default function Pharmacies() {
         {/* Filters */}
         <section className="py-6 bg-card border-b border-border">
           <div className="container">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col lg:flex-row gap-3">
               {/* Date Picker */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full md:w-auto justify-start text-left font-normal h-12")}>
+                  <Button variant="outline" className="w-full lg:w-auto justify-start text-left font-normal h-12">
                     <CalendarIcon className="mr-2 h-5 w-5 text-primary" />
                     {format(date, "EEEE d MMMM yyyy", { locale: fr })}
                   </Button>
@@ -129,7 +122,7 @@ export default function Pharmacies() {
 
               {/* Commune Filter */}
               <Select value={selectedCommune} onValueChange={setSelectedCommune}>
-                <SelectTrigger className="w-full md:w-64 h-12">
+                <SelectTrigger className="w-full lg:w-64 h-12">
                   <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                   <SelectValue />
                 </SelectTrigger>
@@ -141,7 +134,39 @@ export default function Pharmacies() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Rechercher une pharmacie, une adresse…"
+                  className="h-12 pl-9"
+                />
+              </div>
+
+              <Button
+                variant={sortNearest ? "default" : "outline"}
+                className="h-12"
+                onClick={() => {
+                  if (!position) locate();
+                  setSortNearest((v) => !v);
+                }}
+                disabled={geoLoading}
+              >
+                {geoLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixed className="h-4 w-4 mr-2" />}
+                {position ? (sortNearest ? "Plus proches ✓" : "Trier par proximité") : "Pharmacie la plus proche"}
+              </Button>
             </div>
+            {geoError && <p className="text-sm text-destructive mt-2">{geoError}</p>}
+            {nearest && (
+              <div className="mt-3 rounded-xl border border-success/40 bg-success/10 px-4 py-3 text-sm flex items-center gap-2">
+                <Navigation className="h-4 w-4 text-success shrink-0" />
+                <span>
+                  La plus proche : <strong>{nearest.name}</strong> ({nearest.commune}) — à {formatDistance(nearest.dist)}
+                </span>
+              </div>
+            )}
           </div>
         </section>
 
@@ -162,61 +187,98 @@ export default function Pharmacies() {
           <div className="container">
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground">
-                <span className="font-semibold text-foreground">{filteredPharmacies.length}</span> pharmacie(s) de garde
+                <span className="font-semibold text-foreground">{enriched.length}</span> pharmacie(s) de garde
                 pour le <span className="font-semibold text-foreground">{format(date, "d MMMM yyyy", { locale: fr })}</span>
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              {filteredPharmacies.map((pharmacy) => (
-                <div
-                  key={pharmacy.id}
-                  className="bg-card rounded-2xl p-6 border border-border hover:border-success/30 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div>
-                      <h3 className="font-semibold text-lg text-foreground mb-1">{pharmacy.name}</h3>
-                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span>{pharmacy.address}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{pharmacy.commune}, {pharmacy.city}</p>
+            {markers.length > 0 && (
+              <div className="mb-6">
+                <BusinessMap markers={markers} className="h-[320px] w-full rounded-2xl border border-border" />
+              </div>
+            )}
+
+            {loading ? (
+              <div className="grid md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => <div key={i} className="h-40 bg-muted animate-pulse rounded-2xl" />)}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {enriched.map((pharmacy) => (
+                  <div
+                    key={pharmacy.id}
+                    className="bg-card rounded-2xl p-6 border border-border hover:border-success/30 hover:shadow-lg transition-all duration-300"
+                  >
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div>
+                        <h3 className="font-semibold text-lg text-foreground mb-1">{pharmacy.name}</h3>
+                      {pharmacy.address && (
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          <span>{pharmacy.address}</span>
+                        </div>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {pharmacy.commune}{pharmacy.city_name ? `, ${pharmacy.city_name}` : ""}
+                      </p>
+                      {pharmacy.dist != null && (
+                        <p className="text-sm font-medium text-primary mt-1">
+                          à {formatDistance(pharmacy.dist)}
+                        </p>
+                      )}
                     </div>
                     <Badge variant="default" className="bg-success shrink-0">
                       <Clock className="h-3 w-3 mr-1" />
-                      {pharmacy.hours}
+                      24h/24
                     </Badge>
                   </div>
 
                   <div className="flex flex-wrap gap-3">
-                    <Button className="flex-1" asChild>
-                      <a href={`tel:${pharmacy.phone}`}>
+                    {pharmacy.phone ? (
+                      <Button className="flex-1" asChild>
+                        <a href={`tel:${pharmacy.phone.replace(/[^+\d]/g, "")}`}>
+                          <Phone className="h-4 w-4 mr-2" />
+                          {pharmacy.phone}
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button className="flex-1" variant="secondary" disabled>
                         <Phone className="h-4 w-4 mr-2" />
-                        {pharmacy.phone}
-                      </a>
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${pharmacy.coordinates.lat},${pharmacy.coordinates.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Navigation className="h-4 w-4 mr-2" />
-                        Itinéraire
-                      </a>
-                    </Button>
+                        Tél. non renseigné
+                      </Button>
+                    )}
+                    {pharmacy.coords && (
+                      <Button variant="outline" asChild>
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${pharmacy.coords.lat},${pharmacy.coords.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Navigation className="h-4 w-4 mr-2" />
+                          Itinéraire
+                        </a>
+                      </Button>
+                    )}
+                    {pharmacy.source_url && (
+                      <Button variant="ghost" size="icon" asChild title="Voir la source">
+                        <a href={pharmacy.source_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
+            )}
 
-            {filteredPharmacies.length === 0 && (
+            {!loading && enriched.length === 0 && (
               <div className="text-center py-16">
                 <Pill className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground text-lg mb-4">
                   Aucune pharmacie de garde trouvée pour cette date et cette commune.
                 </p>
-                <Button variant="outline" onClick={() => setSelectedCommune("Toutes les communes")}>
+                <Button variant="outline" onClick={() => { setSelectedCommune(ALL); setQuery(""); }}>
                   Voir toutes les communes
                 </Button>
               </div>

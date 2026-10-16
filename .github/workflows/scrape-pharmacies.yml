@@ -1,0 +1,33 @@
+name: Scraping quotidien — Pharmacies de garde
+
+on:
+  schedule:
+    # Chaque jour à 05h30 UTC (= 05h30 Abidjan, avant l'ouverture)
+    - cron: "30 5 * * *"
+  workflow_dispatch: # lancement manuel depuis l'onglet Actions
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Scrape pagesjaunes.ci → Supabase
+        run: node scripts/scrape-pharmacies.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Sauvegarder le JSON du jour
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pharmacies-garde-${{ github.run_id }}
+          path: pharmacies-garde.json
+          retention-days: 30

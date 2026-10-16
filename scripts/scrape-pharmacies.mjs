@@ -17,7 +17,8 @@ function extractPhones(chunk) {
 
 function parseListings(html, meta) {
   const text = stripTags(html);
-  const parts = text.split(/Enregistrer\s+Preview/i).slice(1);
+  // Marqueur stable observé : chaque fiche se termine par "Enregistrer Preview"
+  const parts = text.split(/Enregistrer/i).slice(1);
   const out = [];
   const seen = new Set();
   for (const raw of parts) {
@@ -57,16 +58,18 @@ async function supabaseUpsert(rows, period) {
   let inserted = 0;
   for (let i = 0; i < payload.length; i += 100) {
     const batch = payload.slice(i, i + 100);
-    const res = await fetch(SUPABASE_URL + "/rest/v1/pharmacies_garde", {
+    const res = await fetch(SUPABASE_URL + "/rest/v1/pharmacies_garde?on_conflict=name,start_date,end_date", {
       method: "POST",
       headers: {
         apikey: SERVICE_KEY, Authorization: "Bearer " + SERVICE_KEY,
-        "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal",
+        "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation",
       },
       body: JSON.stringify(batch),
     });
-    if (!res.ok) throw new Error("Upsert " + res.status + ": " + (await res.text()).slice(0, 300));
-    inserted += batch.length;
+    if (!res.ok) throw new Error("Upsert " + res.status + ": " + (await res.text()).slice(0, 500));
+    const returned = await res.json().catch(() => []);
+    console.log("  > batch " + (i / 100 + 1) + ": " + (Array.isArray(returned) ? returned.length : "?") + " ligne(s) confirmees");
+    inserted += Array.isArray(returned) ? returned.length : batch.length;
   }
   await fetch(
     SUPABASE_URL + "/rest/v1/pharmacies_garde?end_date=lt." + period.start_date + "&is_active=eq.true",

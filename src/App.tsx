@@ -1,5 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -24,8 +26,27 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => {
+  const navigate = useNavigate();
+
+  // Restaure la route après un redirect 404.html -> index.html (SPA sur GitHub Pages)
+  useEffect(() => {
+    const redirectPath = sessionStorage.getItem("spa-redirect-path");
+    if (redirectPath && redirectPath !== "/IvoireHub/" && redirectPath !== "/IvoireHub/index.html") {
+      sessionStorage.removeItem("spa-redirect-path");
+      const base = "/IvoireHub/";
+      let relativePath = redirectPath;
+      if (relativePath.startsWith(base)) {
+        relativePath = relativePath.slice(base.length);
+      }
+      if (!relativePath.startsWith("/")) {
+        relativePath = "/" + relativePath;
+      }
+      navigate(relativePath, { replace: true });
+    }
+  }, [navigate]);
+
+  return (
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -60,6 +81,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

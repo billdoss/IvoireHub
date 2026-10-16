@@ -47,7 +47,8 @@ const App = () => {
   }, [navigate]);
 
   return (
-    <TooltipProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
       <Toaster />
       <Sonner />
       {/* BASE_URL = "/IvoireHub/" (defini dans vite.config.ts) : indispensable

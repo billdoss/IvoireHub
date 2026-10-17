@@ -28,7 +28,7 @@ export default function Pharmacies() {
   const { position, loading: geoLoading, error: geoError, locate } = useGeolocation();
 
   const dateISO = format(date, "yyyy-MM-dd");
-  const { data: pharmacies, loading } = useGardePharmacies(dateISO);
+  const { data: pharmacies, loading, error } = useGardePharmacies(dateISO);
 
   const communes = useMemo(() => {
     const set = new Set<string>();
@@ -86,7 +86,7 @@ export default function Pharmacies() {
                 Les variables d'environnement Supabase ne sont pas configurées sur ce déploiement.
                 Vérifiez que <code className="font-mono text-sm">VITE_SUPABASE_URL</code> et
                 <code className="font-mono text-sm">VITE_SUPABASE_PUBLISHABLE_KEY</code> sont définies dans
-                GitHub > Settings > Secrets and variables > Actions.
+                GitHub &gt; Settings &gt; Secrets and variables &gt; Actions.
               </p>
               <p className="text-xs text-muted-foreground">{error}</p>
             </div>

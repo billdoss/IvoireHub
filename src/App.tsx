@@ -1,104 +1,43 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
-import Index from "./pages/Index";
-import Annuaire from "./pages/Annuaire";
-import EntrepriseDetail from "./pages/EntrepriseDetail";
-import Pharmacies from "./pages/Pharmacies";
-import Actualites from "./pages/Actualites";
-import Connexion from "./pages/Connexion";
-import Inscription from "./pages/Inscription";
-import Dashboard from "./pages/Dashboard";
-import NouvelleEntreprise from "./pages/NouvelleEntreprise";
-import EditerEntreprise from "./pages/EditerEntreprise";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminEntreprises from "./pages/admin/AdminEntreprises";
-import AdminCategories from "./pages/admin/AdminCategories";
-import AdminPharmacies from "./pages/admin/AdminPharmacies";
-import AdminArticles from "./pages/admin/AdminArticles";
-import AdminUtilisateurs from "./pages/admin/AdminUtilisateurs";
-import NotFound from "./pages/NotFound";
+import { useEffect, useState } from "react";
 
-const queryClient = new QueryClient();
+// Version minimale pour diagnostic : affiche les variables d'environnement et teste React
+export default function App() {
+  const [envInfo, setEnvInfo] = useState<{ url: string | null; key: string | null }>({
+    url: null,
+    key: null,
+  });
 
-const App = () => {
-  const navigate = useNavigate();
-
-  // Restaure la route après un redirect 404.html -> index.html (SPA sur GitHub Pages)
   useEffect(() => {
-    const redirectPath = sessionStorage.getItem("spa-redirect-path");
-    if (redirectPath && redirectPath !== "/IvoireHub/" && redirectPath !== "/IvoireHub/index.html") {
-      sessionStorage.removeItem("spa-redirect-path");
-      const base = "/IvoireHub/";
-      let relativePath = redirectPath;
-      if (relativePath.startsWith(base)) {
-        relativePath = relativePath.slice(base.length);
-      }
-      if (!relativePath.startsWith("/")) {
-        relativePath = "/" + relativePath;
-      }
-      navigate(relativePath, { replace: true });
-    }
-  }, [navigate]);
+    setEnvInfo({
+      url: import.meta.env.VITE_SUPABASE_URL || null,
+      key: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || null,
+    });
+  }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      {/* BASE_URL = "/IvoireHub/" (defini dans vite.config.ts) : indispensable
-          pour que les routes fonctionnent depuis le sous-chemin de deploiement. */}
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <AuthProvider>
-          <ErrorBoundary
-            fallback={(error, reset) => (
-              <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-background">
-                <h1 className="text-2xl font-bold text-destructive mb-4">Erreur d'application</h1>
-                <pre className="text-sm text-muted-foreground mb-4 max-w-md whitespace-pre-wrap break-all">{error.message}</pre>
-                <button
-                  onClick={reset}
-                  className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
-                >
-                  Réessayer
-                </button>
-              </div>
-            )}
-          >
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/annuaire" element={<Annuaire />} />
-              <Route path="/annuaire/:category" element={<Annuaire />} />
-              <Route path="/entreprise/:id" element={<EntrepriseDetail />} />
-              <Route path="/pharmacies" element={<Pharmacies />} />
-              <Route path="/actualites" element={<Actualites />} />
-              <Route path="/actualites/:id" element={<Actualites />} />
-              <Route path="/connexion" element={<Connexion />} />
-              <Route path="/inscription" element={<Inscription />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/nouvelle-entreprise" element={<NouvelleEntreprise />} />
-              <Route path="/dashboard/editer/:id" element={<EditerEntreprise />} />
-              {/* Admin routes */}
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/entreprises" element={<AdminEntreprises />} />
-              <Route path="/admin/categories" element={<AdminCategories />} />
-              <Route path="/admin/pharmacies" element={<AdminPharmacies />} />
-              <Route path="/admin/articles" element={<AdminArticles />} />
-              <Route path="/admin/utilisateurs" element={<AdminUtilisateurs />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-  );
-};
+    <div style="padding: 2rem; font-family: system-ui, sans-serif; text-align: center;">
+      <h1 style="color: #10b981;">✅ React fonctionne</h1>
+      <p>Si vous voyez ce message, le bundle JS se charge correctement.</p>
 
-export default App;
+      <div style="margin-top: 2rem; text-align: left; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #374151;">Variables d'environnement :</h2>
+        <p>
+          <strong>VITE_SUPABASE_URL :</strong> {envInfo.url ? `✅ Défini (${envInfo.url.substring(0, 30)}...)` : '❌ MANQUANT'}
+        </p>
+        <p>
+          <strong>VITE_SUPABASE_PUBLISHABLE_KEY :</strong> {envInfo.key ? '✅ Défini' : '❌ MANQUANT'}
+        </p>
+      </div>
+
+      {envInfo.url && envInfo.key ? (
+        <div style="margin-top: 2rem; padding: 1rem; background: #d1fae5; border-radius: 0.5rem; color: #065f46;">
+          <p>Les variables Supabase sont présentes. L'application devrait pouvoir se connecter.</p>
+        </div>
+      ) : (
+        <div style="margin-top: 2rem; padding: 1rem; background: #fee2e2; border-radius: 0.5rem; color: #991b1b;">
+          <p>Une ou plusieurs variables Supabase sont manquantes. Vérifiez les secrets GitHub Actions.</p>
+        </div>
+      )}
+    </div>
+  );
+}

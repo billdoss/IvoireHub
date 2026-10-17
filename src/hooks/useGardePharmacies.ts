@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isSupabaseConfigured } from "@/integrations/supabase/client";
 import { COMMUNE_CENTERS } from "@/lib/geo";
 
 export interface GardePharmacy {
@@ -39,6 +39,13 @@ export function useGardePharmacies(dateISO: string) {
     const run = async () => {
       setLoading(true);
       setError(null);
+      if (!isSupabaseConfigured) {
+        setError(
+          "Configuration Supabase manquante. Veuillez configurer VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY dans les secrets GitHub Actions."
+        );
+        setLoading(false);
+        return;
+      }
       try {
         const { data: rows, error: supabaseError } = await supabase
           .from("pharmacies_garde")

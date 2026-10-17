@@ -91,20 +91,7 @@ export default function Pharmacies() {
           </section>
         ) : (
           <>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Configuration manquante</h3>
-              <p className="text-muted-foreground mb-6">
-                Les variables d'environnement Supabase ne sont pas configurées sur ce déploiement.
-                Vérifiez que <code className="font-mono text-sm">VITE_SUPABASE_URL</code> et
-                <code className="font-mono text-sm">VITE_SUPABASE_PUBLISHABLE_KEY</code> sont définies dans
-                GitHub &gt; Settings &gt; Secrets and variables &gt; Actions.
-              </p>
-              <p className="text-xs text-muted-foreground">{error}</p>
-            </div>
-          </section>
-        )}
-
-        {!error && (
-        {/* Hero */}
+            {/* Hero */}
         <section className="bg-gradient-dark py-12 md:py-16 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-96 h-96 bg-success rounded-full blur-3xl" />
